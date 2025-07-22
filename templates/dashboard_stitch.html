@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Job Listings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div class="container mx-auto py-10 px-4">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">My Job Listings</h1>
+      <div class="flex items-center gap-4">
+        <a href="/logout" class="text-sm underline hover:text-gray-300">Logout</a>
+        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">+ Add Job</button>
+      </div>
+    </div>
+
+    {% if jobs|length == 0 %}
+      <p class="text-gray-400">No job postings found. Add your first job.</p>
+    {% else %}
+      <div class="space-y-4">
+        {% for job in jobs %}
+          <div class="bg-gray-800 p-4 rounded flex justify-between items-center">
+            <div onclick="window.location.href='/results/{{ job.id }}'" class="cursor-pointer flex-1">
+              <h2 class="text-lg font-bold uppercase">{{ job.title }}</h2>
+              <p class="text-sm text-gray-300 truncate">{{ job.description }}</p>
+            </div>
+            <div class="flex gap-2">
+              <a href="/edit-job/{{ job.id }}" class="bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1 rounded">Edit</a>
+              <form action="/delete-job/{{ job.id }}" method="POST">
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 rounded">Delete</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Add Job Modal -->
+  <div id="jobModal" class="fixed inset-0 bg-black bg-opacity-60 hidden justify-center items-center">
+    <div class="bg-gray-800 p-6 rounded-xl max-w-md w-full">
+      <h2 class="text-xl font-bold mb-4">Add New Job</h2>
+      <form action="/add-job" method="POST">
+        <div class="mb-4">
+          <label class="block mb-1">Job Title:</label>
+          <input type="text" name="title" required class="w-full p-2 rounded bg-gray-700">
+        </div>
+        <div class="mb-4">
+          <label class="block mb-1">Job Description:</label>
+          <textarea name="description" rows="4" required class="w-full p-2 rounded bg-gray-700"></textarea>
+        </div>
+        <div class="flex justify-between">
+          <button type="button" onclick="closeModal()" class="bg-gray-600 px-4 py-2 rounded">Cancel</button>
+          <button type="submit" class="bg-blue-600 px-4 py-2 rounded">Add Job</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openModal() {
+      document.getElementById('jobModal').classList.remove('hidden');
+      document.getElementById('jobModal').classList.add('flex');
+    }
+    function closeModal() {
+      document.getElementById('jobModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

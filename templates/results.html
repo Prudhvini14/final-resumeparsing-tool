@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Matching Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen py-10">
+    <div class="max-w-7xl mx-auto px-8">
+
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-bold">Resume Matching Results</h2>
+        </div>
+
+        <!-- Job Title and Controls -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                <span class="bg-orange-800 text-white px-4 py-2 rounded-lg font-semibold shadow">
+                    Job: {{ job.title }}
+                </span>
+                <a href="/dashboard" class="text-blue-400 hover:underline text-sm font-medium">
+                    ← Back to Dashboard
+                </a>
+            </div>
+            <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+                <form action="/upload/{{ job.id }}" method="get">
+                    <button type="submit"
+                        class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded shadow transition">
+                        Upload Resumes
+                    </button>
+                </form>
+                <form method="get">
+                    <input type="text" name="search" placeholder="Search candidate..."
+                        class="bg-gray-800 border border-gray-600 px-4 py-2 rounded text-white w-64" />
+                </form>
+            </div>
+        </div>
+
+        <!-- Flash & Duplicate Messages -->
+        <div id="flash-messages" class="space-y-4 mb-6">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="p-4 rounded shadow-md font-semibold
+                              {% if category == 'success' %}bg-green-200 text-green-900
+                              {% elif category == 'error' %}bg-red-200 text-red-900
+                              {% else %}bg-yellow-200 text-yellow-900{% endif %}">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% if duplicate_message %}
+            <div class="p-4 rounded shadow-md font-semibold bg-yellow-200 text-yellow-900">
+                ⚠️ {{ duplicate_message }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Delete Selected + Sort -->
+        <form method="POST" action="/delete-selected-resumes/{{ job.id }}">
+            <div class="flex justify-between items-center mb-4">
+                <button type="submit"
+                        class="inline-block bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm font-medium shadow transition">
+                    Delete 
+                </button>
+                <div class="flex gap-3">
+                    <a href="?sort_by=latest"
+                       class="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 {% if sort_by == 'latest' %}bg-blue-600{% endif %}">
+                       Sort by Latest
+                    </a>
+                    <a href="?sort_by=match"
+                       class="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 {% if sort_by == 'match' %}bg-blue-600{% endif %}">
+                       Sort by Match %
+                    </a>
+                </div>
+            </div>
+
+            <!-- Resume Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left table-auto border-collapse text-sm md:text-base">
+                    <thead>
+                        <tr class="bg-gray-700 text-gray-200">
+                            <th class="px-5 py-3"><input type="checkbox" onclick="toggleAll(this)"></th>
+                            <th class="px-5 py-3">Candidate Name</th>
+                            <th class="px-5 py-3">Match %</th>
+                            <th class="px-5 py-3">Matching Skills</th>
+                            <th class="px-5 py-3">Missing Skills</th>
+                            <th class="px-5 py-3">Feedback</th>
+                            <th class="px-5 py-3 min-w-[160px] whitespace-nowrap">Updated At</th>
+                            <th class="px-5 py-3">Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in results %}
+                            <tr class="border-b border-gray-700 hover:bg-gray-800">
+                                <td class="px-5 py-4"><input type="checkbox" name="resume_ids" value="{{ r.id }}"></td>
+                                <td class="px-5 py-4">{{ r.candidate_name }}</td>
+                                <td class="px-5 py-4">{{ r.match_percentage }}%</td>
+                                <td class="px-5 py-4">{{ r.matched_skills | join(', ') }}</td>
+                                <td class="px-5 py-4">{{ r.missing_skills | join(', ') }}</td>
+                                <td class="px-5 py-4">{{ r.feedback }}</td>
+                                <td class="px-5 py-4 min-w-[160px] whitespace-nowrap">
+                                    {{ r.formatted_date }}
+                                </td>
+                                <td class="px-5 py-4">
+                                    <a href="/uploads/{{ r.file_name }}" class="text-blue-400 hover:underline" download>Download</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+
+        <!-- Pagination -->
+        <div class="mt-8 flex justify-center gap-3">
+            {% for i in range(1, total_pages + 1) %}
+                <a href="?page={{ i }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}"
+                   class="px-4 py-2 rounded {{ 'bg-blue-600' if i == page else 'bg-gray-700 hover:bg-gray-600' }}">
+                    {{ i }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function toggleAll(source) {
+            const checkboxes = document.getElementsByName('resume_ids');
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = source.checked;
+            }
+        }
+
+        // Auto-hide flash messages after 5 seconds
+        setTimeout(() => {
+            const flashBox = document.getElementById("flash-messages");
+            if (flashBox) flashBox.style.display = "none";
+        }, 5000);
+    </script>
+</body>
+</html>

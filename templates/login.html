@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase v9 Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4YRZyMz_8H93FPUJhjJa-iuDtXoORL2Y",
+      authDomain: "resumescreeningtool.firebaseapp.com",
+      projectId: "resumescreeningtool",
+      storageBucket: "resumescreeningtool.appspot.com",
+      messagingSenderId: "806421734032",
+      appId: "1:806421734032:web:80b04e0334d415cdebee15"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    async function loginUser(event) {
+      event.preventDefault();
+      const email = document.querySelector('input[name="username"]').value;
+      const password = document.querySelector('input[name="password"]').value;
+
+      try {
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const idToken = await userCredential.user.getIdToken();
+
+        const res = await fetch('/sessionLogin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken })
+        });
+
+        const data = await res.json();
+        if (data.status === 'success') {
+          window.location.href = "/dashboard";
+        } else {
+          alert("Server rejected login: " + data.message);
+        }
+      } catch (err) {
+        alert("Firebase login error: " + err.message);
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-gray-900 text-white flex justify-center items-center min-h-screen">
+  <form onsubmit="loginUser(event)" class="bg-gray-800 p-8 rounded-xl shadow-md w-96">
+    
+    <!-- LOGO -->
+    <div class="flex justify-center mb-6">
+      <img src="{{ url_for('static', filename='logo.jpeg') }}" alt="Company Logo" class="h-16 w-auto">
+    </div>
+
+    <h2 class="text-2xl font-bold mb-4 text-center">Login</h2>
+    
+    <input name="username" type="email" placeholder="Email"
+      class="w-full p-3 mb-4 rounded bg-gray-700 border border-gray-600" required>
+    
+    <input name="password" type="password" placeholder="Password"
+      class="w-full p-3 mb-4 rounded bg-gray-700 border border-gray-600" required>
+    
+    <button type="submit"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">Login</button>
+
+    <p class="text-center mt-4 text-sm">
+      <a href="/forgot-password" class="text-blue-400 hover:underline">Forgot Password?</a>
+    </p>
+  </form>
+</body>
+</html>
